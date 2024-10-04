@@ -1,6 +1,6 @@
 import axios from "axios";
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { newsApiKey, path } from "../../components/constants";
+import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
+import {newsApiKey, path} from "../../components/constants";
 
 const getArticles = async ({
                                selectedCategories = "",
@@ -17,32 +17,45 @@ const getArticles = async ({
     if (!searchQuery && !sourceIds) {
         throw new Error("Required parameters are missing, the scope of your search is too broad.");
     }
+    try {
+        const response = await axios.get(`${path.newsApi.main}${path.newsApi.everything}`, {
+            params: {
+                apiKey: newsApiKey,
+                q: searchQuery,
+                sources: sourceIds,
+                page: currentPage,
+                pageSize: 10,
+                language: "en",
+                from,
+                to,
+            },
+        });
 
-    const response = await axios.get(`${path.newsApi.main}${path.newsApi.everything}`, {
-        params: {
-            apiKey: newsApiKey,
-            q: searchQuery,
-            sources: sourceIds,
-            page: currentPage,
-            pageSize: 10,
-            language: "en",
-            from,
-            to,
-        },
-    });
+        return {data: response.data.articles, isSourcesSelected};
+    } catch (error) {
+        console.error("Error fetching articles:", error.message);
 
-    return { data: response.data.articles, isSourcesSelected };
+        return {data: [], isSourcesSelected: false};
+    }
+
 }
+
 const getSources = async () => {
-    const response = await axios.get(`${path.newsApi.main}${path.newsApi.sources}`, {
-        params: {
-            apiKey: newsApiKey,
-            country: "us",
-        },
-    });
+    try {
+        const response = await axios.get(`${path.newsApi.main}${path.newsApi.sources}`, {
+            params: {
+                apiKey: newsApiKey,
+                country: "us",
+            },
+        });
 
-    return response.data.sources;
-}
+        return response.data.sources;
+
+    } catch (error) {
+        console.error("Error fetching sources:", error.message);
+        return [];
+    }
+};
 
 export const fetchSources = createAsyncThunk("news/fetchSources", getSources);
 export const fetchArticles = createAsyncThunk("news/fetchArticles", getArticles);
